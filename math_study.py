@@ -5,20 +5,23 @@ import datetime
 def generate_math_problems(num_problems=10):
     """生成100以内加减法和2、3、4乘法题目"""
     problems = []
+    seen_problems = set()  # 用于记录已生成的题目
      # 定义题目类型及其概率权重
     problem_types = [
         ('two_num_add', 0.20),    # 两位数加法
         ('two_num_add_fill', 0.05),# 两位数加法(填空)
         ('two_num_sub', 0.20),    # 两位数减法
         ('two_num_sub_fill', 0.05),# 两位数减法(填空)
-        ('multiply', 0.40),       # 乘法
-        ('multiply_fill', 0.05),  # 乘法(填空)
+        ('multiply', 0.30),       # 乘法
+        ('multiply_fill', 0.16),  # 乘法(填空)
         ('triple_add', 0),     # 三个数连加
         ('triple_sub', 0),     # 三个数连减
-        ('mixed_three', 0.05)     # 三个数混合连加减
+        ('mixed_three', 0.02),     # 三个数混合连加减
+        ('comparison_expr', 0.01), # 算式比较
+        ('compare_num_expr', 0.01) # 算式与数字比较
     ]
     
-    for _ in range(num_problems):  # 生成100道题
+    while len(problems) < num_problems:  # 生成100道题
         # 随机选择题目类型
         op_types = [pt[0] for pt in problem_types]
         weights = [pt[1] for pt in problem_types]
@@ -32,8 +35,8 @@ def generate_math_problems(num_problems=10):
         
         elif operation == 'two_num_add_fill':  # 两位数加法(填空)
             fill_position = random.choice(['first', 'second'])
-            a = random.randint(5, 99)
-            b = random.randint(1, min(30, 100 - a))
+            a = random.randint(0, 99)  # a最大99
+            b = random.randint(0, 100 - a) if a < 100 else 0
             
             if fill_position == 'first':   # 填空加数
                 problem = f"(    ) + {b} = {a + b}"
@@ -48,8 +51,8 @@ def generate_math_problems(num_problems=10):
 
         elif operation == 'two_num_sub_fill':  # 两位数减法(填空)
             fill_position = random.choice(['first', 'second'])
-            a = random.randint(15, 100)
-            b = random.randint(1, min(30, a))
+            a = random.randint(1, 100)  # a最小1
+            b = random.randint(0, a)
             
             if fill_position == 'first':   # 填空被减数
                 problem = f"(    ) - {b} = {a - b}"
@@ -105,8 +108,100 @@ def generate_math_problems(num_problems=10):
                 c = random.randint(1, c_max) if c_max > 0 else 0
                 problem = f"{a} - {b} + {c} =" if c_max > 0 else f"{a} - {b} ="
 
+        elif operation == 'comparison_expr':  # 算式比较
+            # 随机生成两个算式
+            expr_type = random.choice(['add_add', 'add_sub', 'sub_add', 'mult_mult', 'add_mult'])
+            
+            if expr_type == 'add_add':  # 加法 vs 加法
+                a1 = random.randint(0, 99)
+                b1 = random.randint(0, 100 - a1) if a1 < 100 else 0
+                expr1 = f"{a1} + {b1}"
+                val1 = a1 + b1
+                
+                a2 = random.randint(0, 99)
+                b2 = random.randint(0, 100 - a2) if a2 < 100 else 0
+                expr2 = f"{a2} + {b2}"
+                val2 = a2 + b2
+                
+            elif expr_type == 'add_sub':  # 加法 vs 减法
+                a1 = random.randint(0, 99)
+                b1 = random.randint(0, 100 - a1) if a1 < 100 else 0
+                expr1 = f"{a1} + {b1}"
+                val1 = a1 + b1
+                
+                a2 = random.randint(1, 100)
+                b2 = random.randint(0, a2)
+                expr2 = f"{a2} - {b2}"
+                val2 = a2 - b2
+                
+            elif expr_type == 'sub_add':  # 减法 vs 加法
+                a1 = random.randint(1, 100)
+                b1 = random.randint(0, a1)
+                expr1 = f"{a1} - {b1}"
+                val1 = a1 - b1
+                
+                a2 = random.randint(0, 99)
+                b2 = random.randint(0, 100 - a2) if a2 < 100 else 0
+                expr2 = f"{a2} + {b2}"
+                val2 = a2 + b2
+                
+            elif expr_type == 'mult_mult':  # 乘法 vs 乘法
+                mult1 = random.randint(1, 9)
+                mult2 = random.randint(1, 9)
+                num1 = random.randint(1, 9)
+                num2 = random.randint(1, 9)
+                expr1 = f"{num1} × {mult1}"
+                val1 = num1 * mult1
+                expr2 = f"{num2} × {mult2}"
+                val2 = num2 * mult2
+                
+            else:  # add_mult: 加法 vs 乘法
+                a1 = random.randint(0, 99)
+                b1 = random.randint(1, 100 - a1) if a1 < 100 else 0
+                expr1 = f"{a1} + {b1}"
+                val1 = a1 + b1
+                
+                mult = random.randint(1, 9)
+                num = random.randint(1, 9)
+                expr2 = f"{num} × {mult}"
+                val2 = num * mult
 
-        problems.append((problem))
+            problem = f"{expr1} ◯ {expr2}"    
+
+        elif operation == 'compare_num_expr':  # 算式与数字比较
+            num_on_left = random.choice([True, False])
+            expr_type = random.choice(['add', 'sub', 'mult'])
+            
+            if expr_type == 'add':  # 加法
+                a = random.randint(0, 99)
+                b = random.randint(1, 100 - a) if a < 100 else 0
+                expr = f"{a} + {b}"
+                val = a + b
+                
+            elif expr_type == 'sub':  # 减法
+                a = random.randint(1, 100)
+                b = random.randint(0, a)
+                expr = f"{a} - {b}"
+                val = a - b
+                
+            else:  # 乘法
+                mult = random.randint(1, 9)
+                num = random.randint(1, 9)
+                expr = f"{num} × {mult}"
+                val = num * mult
+                
+            variation = random.choice([0, random.randint(1, 3), -random.randint(1, 3)])
+            num_val = val + variation
+            
+            # 使用圆形符号 ○ 作为填空位置
+            if num_on_left:
+                problem = f"{num_val} ○ {expr}"
+            else:
+                problem = f"{expr} ○ {num_val}"
+
+        if problem and problem not in seen_problems:
+            problems.append(problem)
+            seen_problems.add(problem)
     
     return problems
 
@@ -131,9 +226,9 @@ def create_math_pdf(problems, filename="Math_Problems.pdf"):
     pdf.cell(0, 15, "小学数学练习题", ln=True, align="C") """
     
     # 日期和难度信息
-    pdf.set_font("NotoSansSC", "", 10)
+    pdf.set_font("NotoSansSC", "", 15)
     today = datetime.datetime.now().strftime("%Y年%m月%d日")
-    pdf.cell(0, 8, f"日期：________________        姓名：________________ ", ln=True)
+    pdf.cell(0, 8, f"姓名：________________        日期：________________        用时：________________", ln=True)
     pdf.ln(5)
     
     # 说明文字
@@ -143,12 +238,12 @@ def create_math_pdf(problems, filename="Math_Problems.pdf"):
     pdf.ln(10) """
     
 # 添加题目（一行四列布局）
-    pdf.set_font("NotoSansSC", "", 14)
+    pdf.set_font("NotoSansSC", "", 13)
     
     # 定义四列的宽度和位置
     col_width = 45  # 每列宽度
     left_margin = 10  # 左边距
-    spacing = 4  # 列间距
+    spacing = 5  # 列间距
     row_height = 8  # 行高
     
     # 计算列坐标
@@ -173,11 +268,11 @@ def create_math_pdf(problems, filename="Math_Problems.pdf"):
                 pdf.set_xy(col_positions[col], y_position)
                 pdf.cell(col_width, row_height, f"{problems[idx]}", border=0)
         
-        pdf.ln(row_height + 2)  # 行间距
+        pdf.ln(row_height + 2.2)  # 行间距
         
         # 每5行增加额外间距
-        #if (i + 1) % 5 == 0:
-        #    pdf.ln(5)
+        """ if (i + 1) % 5 == 0:
+            pdf.ln(1) """
     
     # 保存文件
     pdf.output(filename)
