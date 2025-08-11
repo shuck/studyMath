@@ -8,196 +8,212 @@ def generate_math_problems(num_problems=10):
     seen_problems = set()  # 用于记录已生成的题目
      # 定义题目类型及其概率权重
     problem_types = [
-        ('two_num_add', 0.20),    # 两位数加法
-        ('two_num_add_fill', 0.05),# 两位数加法(填空)
-        ('two_num_sub', 0.20),    # 两位数减法
-        ('two_num_sub_fill', 0.05),# 两位数减法(填空)
-        ('multiply', 0.30),       # 乘法
-        ('multiply_fill', 0.16),  # 乘法(填空)
+        ('two_num_add', 20),    # 两位数加法
+        ('two_num_add_fill', 5),# 两位数加法(填空)
+        ('two_num_sub', 20),    # 两位数减法
+        ('two_num_sub_fill', 5),# 两位数减法(填空)
+        ('multiply', 30),       # 乘法
+        ('multiply_fill', 16),  # 乘法(填空)
         ('triple_add', 0),     # 三个数连加
         ('triple_sub', 0),     # 三个数连减
-        ('mixed_three', 0.02),     # 三个数混合连加减
-        ('comparison_expr', 0.01), # 算式比较
-        ('compare_num_expr', 0.01) # 算式与数字比较
+        ('mixed_three', 2),     # 三个数混合连加减
+        ('comparison_expr', 1), # 算式比较
+        ('compare_num_expr', 1) # 算式与数字比较
     ]
+
+    # 创建题型队列，确保每种题型生成指定数量
+    type_queue = []
+    for op_type, count in problem_types:
+        if count > 0:
+            # 将题型添加到队列中
+            type_queue.extend([op_type] * count)
+    print(f"题型队列: {type_queue}")
     
-    while len(problems) < num_problems:  # 生成100道题
-        # 随机选择题目类型
-        op_types = [pt[0] for pt in problem_types]
-        weights = [pt[1] for pt in problem_types]
-        operation = random.choices(op_types, weights=weights)[0]
-        
-        if operation == 'two_num_add':  # 两位数加法
-            # 修正：避免100 + 0问题
-            a = random.randint(0, 99)  # a最大99
-            b = random.randint(0, 100 - a) if a < 100 else 0
-            problem = f"{a} + {b} ="
-        
-        elif operation == 'two_num_add_fill':  # 两位数加法(填空)
-            fill_position = random.choice(['first', 'second'])
-            a = random.randint(0, 99)  # a最大99
-            b = random.randint(0, 100 - a) if a < 100 else 0
+    # 随机打乱题型顺序
+    random.shuffle(type_queue)
+    
+    # 生成100道不重复的题目
+    for operation in type_queue:
+        problem = None
+        attempts = 0
+        max_attempts = 100  # 防止无限循环
+        while problem is None or problem in seen_problems:
+            attempts += 1
+            if attempts > max_attempts:
+                # 如果无法生成新题目，跳过该题型
+                break
             
-            if fill_position == 'first':   # 填空加数
-                problem = f"(    ) + {b} = {a + b}"
-            else:  # 填空被加数
-                problem = f"{a} + (    ) = {a + b}"
+            if operation == 'two_num_add':  # 两位数加法
+                # 修正：避免100 + 0问题
+                a = random.randint(0, 99)  # a最大99
+                b = random.randint(0, 100 - a) if a < 100 else 0
+                problem = f"{a} + {b} ="
+            
+            elif operation == 'two_num_add_fill':  # 两位数加法(填空)
+                fill_position = random.choice(['first', 'second'])
+                a = random.randint(0, 99)  # a最大99
+                b = random.randint(0, 100 - a) if a < 100 else 0
+                
+                if fill_position == 'first':   # 填空加数
+                    problem = f"(    ) + {b} = {a + b}"
+                else:  # 填空被加数
+                    problem = f"{a} + (    ) = {a + b}"
 
-        elif operation == 'two_num_sub':  # 两位数减法
-            # 修正：避免0 - 0问题
-            a = random.randint(1, 100)  # a最小1
-            b = random.randint(0, a)
-            problem = f"{a} - {b} ="
-
-        elif operation == 'two_num_sub_fill':  # 两位数减法(填空)
-            fill_position = random.choice(['first', 'second'])
-            a = random.randint(1, 100)  # a最小1
-            b = random.randint(0, a)
-            
-            if fill_position == 'first':   # 填空被减数
-                problem = f"(    ) - {b} = {a - b}"
-            else:  # 填空减数
-                problem = f"{a} - (    ) = {a - b}"
-            
-        elif operation == 'multiply':  # 乘法 (限2、3、4)
-            multiplier = random.randint(1, 9)  # 限制乘数为1-9
-            multiplicand = random.randint(1, 9)  # 限制积不超过100
-            problem = f"{multiplicand} × {multiplier} ="
-        
-        elif operation == 'multiply_fill':  # 乘法(填空)
-            fill_position = random.choice(['first', 'second'])
-            multiplier = random.randint(1, 9)
-            multiplicand = random.randint(1, 9)  # 被乘数不为0
-            result = multiplicand * multiplier
-            
-            if fill_position == 'first':   # 填空乘数
-                problem = f"{multiplicand} × (    ) = {result}"
-            else:  # 填空被乘数
-                problem = f"(    ) × {multiplier} = {result}"
-            
-        elif operation == 'triple_add':  # 三个数连加
-            # 修正：确保总和不超过100
-            a = random.randint(1, 50)
-            b = random.randint(1, min(50, 99 - a))  # 限制b的范围
-            c = random.randint(1, min(30, 100 - a - b))  # 限制c的范围
-            problem = f"{a} + {b} + {c} ="
-            
-        elif operation == 'triple_sub':  # 三个数连减
-            # 确保每一步结果非负
-            a = random.randint(20, 80)
-            b = random.randint(1, min(30, a - 1))  # 限制b的范围
-            c = random.randint(1, min(30, a - b))  # 限制c的范围
-            problem = f"{a} - {b} - {c} ="
-            
-        elif operation == 'mixed_three':  # 三个数混合连加减
-            # 重构：更安全的生成策略
-            pattern_type = random.choice(['+-', '-+'])
-            
-            if pattern_type == '+-':  # a + b - c
-                a = random.randint(1, 70)
-                b = random.randint(1, min(30, 100 - a))
-                # 确保a + b >= c
-                c = random.randint(1, min(30, a + b))
-                problem = f"{a} + {b} - {c} ="
-                
-            else:  # a - b + c
-                a = random.randint(10, 70)
-                b = random.randint(1, min(30, a))  # 确保a >= b
-                # 确保结果在100以内
-                c_max = min(30, 100 - (a - b))
-                c = random.randint(1, c_max) if c_max > 0 else 0
-                problem = f"{a} - {b} + {c} =" if c_max > 0 else f"{a} - {b} ="
-
-        elif operation == 'comparison_expr':  # 算式比较
-            # 随机生成两个算式
-            expr_type = random.choice(['add_add', 'add_sub', 'sub_add', 'mult_mult', 'add_mult'])
-            
-            if expr_type == 'add_add':  # 加法 vs 加法
-                a1 = random.randint(0, 99)
-                b1 = random.randint(0, 100 - a1) if a1 < 100 else 0
-                expr1 = f"{a1} + {b1}"
-                val1 = a1 + b1
-                
-                a2 = random.randint(0, 99)
-                b2 = random.randint(0, 100 - a2) if a2 < 100 else 0
-                expr2 = f"{a2} + {b2}"
-                val2 = a2 + b2
-                
-            elif expr_type == 'add_sub':  # 加法 vs 减法
-                a1 = random.randint(0, 99)
-                b1 = random.randint(0, 100 - a1) if a1 < 100 else 0
-                expr1 = f"{a1} + {b1}"
-                val1 = a1 + b1
-                
-                a2 = random.randint(1, 100)
-                b2 = random.randint(0, a2)
-                expr2 = f"{a2} - {b2}"
-                val2 = a2 - b2
-                
-            elif expr_type == 'sub_add':  # 减法 vs 加法
-                a1 = random.randint(1, 100)
-                b1 = random.randint(0, a1)
-                expr1 = f"{a1} - {b1}"
-                val1 = a1 - b1
-                
-                a2 = random.randint(0, 99)
-                b2 = random.randint(0, 100 - a2) if a2 < 100 else 0
-                expr2 = f"{a2} + {b2}"
-                val2 = a2 + b2
-                
-            elif expr_type == 'mult_mult':  # 乘法 vs 乘法
-                mult1 = random.randint(1, 9)
-                mult2 = random.randint(1, 9)
-                num1 = random.randint(1, 9)
-                num2 = random.randint(1, 9)
-                expr1 = f"{num1} × {mult1}"
-                val1 = num1 * mult1
-                expr2 = f"{num2} × {mult2}"
-                val2 = num2 * mult2
-                
-            else:  # add_mult: 加法 vs 乘法
-                a1 = random.randint(0, 99)
-                b1 = random.randint(1, 100 - a1) if a1 < 100 else 0
-                expr1 = f"{a1} + {b1}"
-                val1 = a1 + b1
-                
-                mult = random.randint(1, 9)
-                num = random.randint(1, 9)
-                expr2 = f"{num} × {mult}"
-                val2 = num * mult
-
-            problem = f"{expr1} ◯ {expr2}"    
-
-        elif operation == 'compare_num_expr':  # 算式与数字比较
-            num_on_left = random.choice([True, False])
-            expr_type = random.choice(['add', 'sub', 'mult'])
-            
-            if expr_type == 'add':  # 加法
-                a = random.randint(0, 99)
-                b = random.randint(1, 100 - a) if a < 100 else 0
-                expr = f"{a} + {b}"
-                val = a + b
-                
-            elif expr_type == 'sub':  # 减法
-                a = random.randint(1, 100)
+            elif operation == 'two_num_sub':  # 两位数减法
+                # 修正：避免0 - 0问题
+                a = random.randint(1, 100)  # a最小1
                 b = random.randint(0, a)
-                expr = f"{a} - {b}"
-                val = a - b
+                problem = f"{a} - {b} ="
+
+            elif operation == 'two_num_sub_fill':  # 两位数减法(填空)
+                fill_position = random.choice(['first', 'second'])
+                a = random.randint(1, 100)  # a最小1
+                b = random.randint(0, a)
                 
-            else:  # 乘法
-                mult = random.randint(1, 9)
-                num = random.randint(1, 9)
-                expr = f"{num} × {mult}"
-                val = num * mult
+                if fill_position == 'first':   # 填空被减数
+                    problem = f"(    ) - {b} = {a - b}"
+                else:  # 填空减数
+                    problem = f"{a} - (    ) = {a - b}"
                 
-            variation = random.choice([0, random.randint(1, 3), -random.randint(1, 3)])
-            num_val = val + variation
+            elif operation == 'multiply':  # 乘法 (限2、3、4)
+                multiplier = random.randint(1, 9)  # 限制乘数为1-9
+                multiplicand = random.randint(1, 9)  # 限制积不超过100
+                problem = f"{multiplicand} × {multiplier} ="
             
-            # 使用圆形符号 ○ 作为填空位置
-            if num_on_left:
-                problem = f"{num_val} ○ {expr}"
-            else:
-                problem = f"{expr} ○ {num_val}"
+            elif operation == 'multiply_fill':  # 乘法(填空)
+                fill_position = random.choice(['first', 'second'])
+                multiplier = random.randint(1, 9)
+                multiplicand = random.randint(1, 9)  # 被乘数不为0
+                result = multiplicand * multiplier
+                
+                if fill_position == 'first':   # 填空乘数
+                    problem = f"{multiplicand} × (    ) = {result}"
+                else:  # 填空被乘数
+                    problem = f"(    ) × {multiplier} = {result}"
+                
+            elif operation == 'triple_add':  # 三个数连加
+                # 修正：确保总和不超过100
+                a = random.randint(1, 50)
+                b = random.randint(1, min(50, 99 - a))  # 限制b的范围
+                c = random.randint(1, min(30, 100 - a - b))  # 限制c的范围
+                problem = f"{a} + {b} + {c} ="
+                
+            elif operation == 'triple_sub':  # 三个数连减
+                # 确保每一步结果非负
+                a = random.randint(20, 80)
+                b = random.randint(1, min(30, a - 1))  # 限制b的范围
+                c = random.randint(1, min(30, a - b))  # 限制c的范围
+                problem = f"{a} - {b} - {c} ="
+                
+            elif operation == 'mixed_three':  # 三个数混合连加减
+                # 重构：更安全的生成策略
+                pattern_type = random.choice(['+-', '-+'])
+                
+                if pattern_type == '+-':  # a + b - c
+                    a = random.randint(1, 70)
+                    b = random.randint(1, min(30, 100 - a))
+                    # 确保a + b >= c
+                    c = random.randint(1, min(30, a + b))
+                    problem = f"{a} + {b} - {c} ="
+                    
+                else:  # a - b + c
+                    a = random.randint(10, 70)
+                    b = random.randint(1, min(30, a))  # 确保a >= b
+                    # 确保结果在100以内
+                    c_max = min(30, 100 - (a - b))
+                    c = random.randint(1, c_max) if c_max > 0 else 0
+                    problem = f"{a} - {b} + {c} =" if c_max > 0 else f"{a} - {b} ="
+
+            elif operation == 'comparison_expr':  # 算式比较
+                # 随机生成两个算式
+                expr_type = random.choice(['add_add', 'add_sub', 'sub_add', 'mult_mult', 'add_mult'])
+                
+                if expr_type == 'add_add':  # 加法 vs 加法
+                    a1 = random.randint(0, 99)
+                    b1 = random.randint(0, 100 - a1) if a1 < 100 else 0
+                    expr1 = f"{a1} + {b1}"
+                    val1 = a1 + b1
+                    
+                    a2 = random.randint(0, 99)
+                    b2 = random.randint(0, 100 - a2) if a2 < 100 else 0
+                    expr2 = f"{a2} + {b2}"
+                    val2 = a2 + b2
+                    
+                elif expr_type == 'add_sub':  # 加法 vs 减法
+                    a1 = random.randint(0, 99)
+                    b1 = random.randint(0, 100 - a1) if a1 < 100 else 0
+                    expr1 = f"{a1} + {b1}"
+                    val1 = a1 + b1
+                    
+                    a2 = random.randint(1, 100)
+                    b2 = random.randint(0, a2)
+                    expr2 = f"{a2} - {b2}"
+                    val2 = a2 - b2
+                    
+                elif expr_type == 'sub_add':  # 减法 vs 加法
+                    a1 = random.randint(1, 100)
+                    b1 = random.randint(0, a1)
+                    expr1 = f"{a1} - {b1}"
+                    val1 = a1 - b1
+                    
+                    a2 = random.randint(0, 99)
+                    b2 = random.randint(0, 100 - a2) if a2 < 100 else 0
+                    expr2 = f"{a2} + {b2}"
+                    val2 = a2 + b2
+                    
+                elif expr_type == 'mult_mult':  # 乘法 vs 乘法
+                    mult1 = random.randint(1, 9)
+                    mult2 = random.randint(1, 9)
+                    num1 = random.randint(1, 9)
+                    num2 = random.randint(1, 9)
+                    expr1 = f"{num1} × {mult1}"
+                    val1 = num1 * mult1
+                    expr2 = f"{num2} × {mult2}"
+                    val2 = num2 * mult2
+                    
+                else:  # add_mult: 加法 vs 乘法
+                    a1 = random.randint(0, 99)
+                    b1 = random.randint(1, 100 - a1) if a1 < 100 else 0
+                    expr1 = f"{a1} + {b1}"
+                    val1 = a1 + b1
+                    
+                    mult = random.randint(1, 9)
+                    num = random.randint(1, 9)
+                    expr2 = f"{num} × {mult}"
+                    val2 = num * mult
+
+                problem = f"{expr1} ◯ {expr2}"    
+
+            elif operation == 'compare_num_expr':  # 算式与数字比较
+                num_on_left = random.choice([True, False])
+                expr_type = random.choice(['add', 'sub', 'mult'])
+                
+                if expr_type == 'add':  # 加法
+                    a = random.randint(0, 99)
+                    b = random.randint(1, 100 - a) if a < 100 else 0
+                    expr = f"{a} + {b}"
+                    val = a + b
+                    
+                elif expr_type == 'sub':  # 减法
+                    a = random.randint(1, 100)
+                    b = random.randint(0, a)
+                    expr = f"{a} - {b}"
+                    val = a - b
+                    
+                else:  # 乘法
+                    mult = random.randint(1, 9)
+                    num = random.randint(1, 9)
+                    expr = f"{num} × {mult}"
+                    val = num * mult
+                    
+                variation = random.choice([0, random.randint(1, 3), -random.randint(1, 3)])
+                num_val = val + variation
+                
+                # 使用圆形符号 ○ 作为填空位置
+                if num_on_left:
+                    problem = f"{num_val} ○ {expr}"
+                else:
+                    problem = f"{expr} ○ {num_val}"
 
         if problem and problem not in seen_problems:
             problems.append(problem)
