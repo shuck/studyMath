@@ -7,9 +7,12 @@ def generate_math_problems(num_problems=10):
     problems = []
      # 定义题目类型及其概率权重
     problem_types = [
-        ('two_num_add', 0.25),    # 两位数加法
-        ('two_num_sub', 0.25),    # 两位数减法
-        ('multiply', 0.45),       # 乘法
+        ('two_num_add', 0.20),    # 两位数加法
+        ('two_num_add_fill', 0.05),# 两位数加法(填空)
+        ('two_num_sub', 0.20),    # 两位数减法
+        ('two_num_sub_fill', 0.05),# 两位数减法(填空)
+        ('multiply', 0.40),       # 乘法
+        ('multiply_fill', 0.05),  # 乘法(填空)
         ('triple_add', 0),     # 三个数连加
         ('triple_sub', 0),     # 三个数连减
         ('mixed_three', 0.05)     # 三个数混合连加减
@@ -26,17 +29,48 @@ def generate_math_problems(num_problems=10):
             a = random.randint(0, 99)  # a最大99
             b = random.randint(0, 100 - a) if a < 100 else 0
             problem = f"{a} + {b} ="
+        
+        elif operation == 'two_num_add_fill':  # 两位数加法(填空)
+            fill_position = random.choice(['first', 'second'])
+            a = random.randint(5, 99)
+            b = random.randint(1, min(30, 100 - a))
             
+            if fill_position == 'first':   # 填空加数
+                problem = f"(    ) + {b} = {a + b}"
+            else:  # 填空被加数
+                problem = f"{a} + (    ) = {a + b}"
+
         elif operation == 'two_num_sub':  # 两位数减法
             # 修正：避免0 - 0问题
             a = random.randint(1, 100)  # a最小1
             b = random.randint(0, a)
             problem = f"{a} - {b} ="
+
+        elif operation == 'two_num_sub_fill':  # 两位数减法(填空)
+            fill_position = random.choice(['first', 'second'])
+            a = random.randint(15, 100)
+            b = random.randint(1, min(30, a))
+            
+            if fill_position == 'first':   # 填空被减数
+                problem = f"(    ) - {b} = {a - b}"
+            else:  # 填空减数
+                problem = f"{a} - (    ) = {a - b}"
             
         elif operation == 'multiply':  # 乘法 (限2、3、4)
             multiplier = random.randint(1, 9)  # 限制乘数为1-9
             multiplicand = random.randint(1, 9)  # 限制积不超过100
             problem = f"{multiplicand} × {multiplier} ="
+        
+        elif operation == 'multiply_fill':  # 乘法(填空)
+            fill_position = random.choice(['first', 'second'])
+            multiplier = random.randint(1, 9)
+            multiplicand = random.randint(1, 9)  # 被乘数不为0
+            result = multiplicand * multiplier
+            
+            if fill_position == 'first':   # 填空乘数
+                problem = f"{multiplicand} × (    ) = {result}"
+            else:  # 填空被乘数
+                problem = f"(    ) × {multiplier} = {result}"
             
         elif operation == 'triple_add':  # 三个数连加
             # 修正：确保总和不超过100
