@@ -27,7 +27,7 @@ def generate_math_problems(num_problems=10):
         if count > 0:
             # 将题型添加到队列中
             type_queue.extend([op_type] * count)
-    print(f"题型队列: {type_queue}")
+    #print(f"题型队列: {type_queue}")
     
     # 随机打乱题型顺序
     random.shuffle(type_queue)
@@ -232,10 +232,11 @@ def create_math_pdf(problems, filename="Math_Problems.pdf"):
 
     # 设置紧凑的页边距（上下左右均为5mm）
     #pdf.set_margins(5, 5, 5)
-    #pdf.set_auto_page_break(False)  # 禁用自动分页
+    pdf.set_auto_page_break(False)  # 禁用自动分页
     
     # 使用系统默认字体
     pdf.set_font("NotoSansSC", size=10)
+    #pdf.set_left_margin(20)
     
     # 标题
     """ pdf.set_font("NotoSansSC", "B", 16)
@@ -245,7 +246,7 @@ def create_math_pdf(problems, filename="Math_Problems.pdf"):
     pdf.set_font("NotoSansSC", "", 15)
     today = datetime.datetime.now().strftime("%Y年%m月%d日")
     pdf.cell(0, 8, f"姓名：________________        日期：________________        用时：________________", ln=True)
-    pdf.ln(5)
+    pdf.ln(7)
     
     # 说明文字
     """ pdf.set_font("NotoSansSC", "", 10)
@@ -261,6 +262,7 @@ def create_math_pdf(problems, filename="Math_Problems.pdf"):
     left_margin = 10  # 左边距
     spacing = 5  # 列间距
     row_height = 8  # 行高
+    bottom_margin = 10.5  # 下边距
     
     # 计算列坐标
     col_positions = [
@@ -283,8 +285,8 @@ def create_math_pdf(problems, filename="Math_Problems.pdf"):
             if idx < problem_count:
                 pdf.set_xy(col_positions[col], y_position)
                 pdf.cell(col_width, row_height, f"{problems[idx]}", border=0)
-        
-        pdf.ln(row_height + 2.2)  # 行间距
+        if (i + 1) < rows_needed:
+            pdf.ln(bottom_margin)  # 行间距
         
         # 每5行增加额外间距
         """ if (i + 1) % 5 == 0:
