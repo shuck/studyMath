@@ -3,22 +3,32 @@ from fpdf import FPDF
 import datetime
 
 def generate_math_problems(num_problems=10):
+    # 预先生成乘法口诀表范围内的除法题示例
+    multiplication_table_divisions = []
+    for divisor in range(2, 10):
+        for quotient in range(1, 10):
+            dividend = divisor * quotient
+            if 10 <= dividend <= 81:
+                multiplication_table_divisions.append((dividend, divisor, quotient))
+
     """生成100以内加减法和2、3、4乘法题目"""
     problems = []
     seen_problems = set()  # 用于记录已生成的题目
      # 定义题目类型及其概率权重
     problem_types = [
-        ('two_num_add', 20),    # 两位数加法
+        ('two_num_add', 10),    # 两位数加法
         ('two_num_add_fill', 5),# 两位数加法(填空)
-        ('two_num_sub', 20),    # 两位数减法
+        ('two_num_sub', 10),    # 两位数减法
         ('two_num_sub_fill', 5),# 两位数减法(填空)
-        ('multiply', 30),       # 乘法
-        ('multiply_fill', 16),  # 乘法(填空)
+        ('multiply', 20),       # 乘法
+        ('multiply_fill', 13),  # 乘法(填空)
         ('triple_add', 0),     # 三个数连加
         ('triple_sub', 0),     # 三个数连减
         ('mixed_three', 2),     # 三个数混合连加减
         ('comparison_expr', 1), # 算式比较
-        ('compare_num_expr', 1) # 算式与数字比较
+        ('compare_num_expr', 1), # 算式与数字比较
+        ('divide', 18), # 新增
+        ('divide_fill', 15) # 新增
     ]
 
     # 创建题型队列，确保每种题型生成指定数量
@@ -90,6 +100,27 @@ def generate_math_problems(num_problems=10):
                     problem = f"{multiplicand} × (    ) = {result}"
                 else:  # 填空被乘数
                     problem = f"(    ) × {multiplier} = {result}"
+
+            elif operation == 'divide':  # 除法（乘法口诀范围内）
+                if not multiplication_table_divisions:
+                    continue
+                
+                dividend, divisor, quotient = random.choice(multiplication_table_divisions)
+                problem = f"{dividend} ÷ {divisor} ="
+                
+            elif operation == 'divide_fill':  # 除法(填空)
+                if not multiplication_table_divisions:
+                    continue
+                
+                fill_position = random.choice(['dividend', 'divisor', 'quotient'])
+                dividend, divisor, quotient = random.choice(multiplication_table_divisions)
+                
+                if fill_position == 'dividend':   # 填空被除数
+                    problem = f"____ ÷ {divisor} = {quotient}"
+                elif fill_position == 'divisor':  # 填空除数
+                    problem = f"{dividend} ÷ ____ = {quotient}"
+                else:  # 填空商
+                    problem = f"{dividend} ÷ {divisor} = ____"
                 
             elif operation == 'triple_add':  # 三个数连加
                 # 修正：确保总和不超过100
@@ -126,7 +157,7 @@ def generate_math_problems(num_problems=10):
 
             elif operation == 'comparison_expr':  # 算式比较
                 # 随机生成两个算式
-                expr_type = random.choice(['add_add', 'add_sub', 'sub_add', 'mult_mult', 'add_mult'])
+                expr_type = random.choice(['add_add', 'add_sub', 'sub_add', 'mult_mult', 'add_mult', 'div_div', 'add_div'])
                 
                 if expr_type == 'add_add':  # 加法 vs 加法
                     a1 = random.randint(0, 99)
@@ -170,6 +201,27 @@ def generate_math_problems(num_problems=10):
                     val1 = num1 * mult1
                     expr2 = f"{num2} × {mult2}"
                     val2 = num2 * mult2
+                
+                elif expr_type == 'div_div':  # 除法 vs 除法
+                    if not multiplication_table_divisions:
+                        continue
+                    
+                    dividend1, divisor1, quotient1 = random.choice(multiplication_table_divisions)
+                    dividend2, divisor2, quotient2 = random.choice(multiplication_table_divisions)
+                    
+                    expr1 = f"{dividend1} ÷ {divisor1}"
+                    expr2 = f"{dividend2} ÷ {divisor2}"
+                    
+                elif expr_type == 'add_div':  # 加法 vs 除法
+                    a1 = random.randint(1, 80)
+                    b1 = random.randint(1, min(20, 99 - a1))
+                    expr1 = f"{a1} + {b1}"
+                    
+                    if not multiplication_table_divisions:
+                        continue
+                    
+                    dividend, divisor, quotient = random.choice(multiplication_table_divisions)
+                    expr2 = f"{dividend} ÷ {divisor}"
                     
                 else:  # add_mult: 加法 vs 乘法
                     a1 = random.randint(0, 99)
@@ -186,7 +238,7 @@ def generate_math_problems(num_problems=10):
 
             elif operation == 'compare_num_expr':  # 算式与数字比较
                 num_on_left = random.choice([True, False])
-                expr_type = random.choice(['add', 'sub', 'mult'])
+                expr_type = random.choice(['add', 'sub', 'mult', 'div'])
                 
                 if expr_type == 'add':  # 加法
                     a = random.randint(0, 99)
@@ -200,11 +252,19 @@ def generate_math_problems(num_problems=10):
                     expr = f"{a} - {b}"
                     val = a - b
                     
-                else:  # 乘法
+                elif expr_type == 'mult':   # 乘法
                     mult = random.randint(1, 9)
                     num = random.randint(1, 9)
                     expr = f"{num} × {mult}"
                     val = num * mult
+                
+                else:  # 除法
+                    if not multiplication_table_divisions:
+                        continue
+                    
+                    dividend, divisor, quotient = random.choice(multiplication_table_divisions)
+                    expr = f"{dividend} ÷ {divisor}"
+                    val = quotient
                     
                 variation = random.choice([0, random.randint(1, 3), -random.randint(1, 3)])
                 num_val = val + variation
