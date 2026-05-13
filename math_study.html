@@ -4,111 +4,203 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>数学题生成器 (H5 版)</title>
-    <style>
-        body { font-family: "Microsoft YaHei", "SimHei", sans-serif; padding: 20px; }
-        .controls { margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px; }
-        .controls input { padding: 8px; width: 100px; margin-right: 10px; }
-        .controls button { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        .controls button:hover { background: #0056b3; }
-        
-        /* 题目区域样式 */
-        #problem-container { display: none; }
-        .header-info { text-align: center; margin-bottom: 10px; font-size: 14px; }
-        
-        /* 一行四列 */
-        .problem-grid { 
-            display: grid; 
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px 5px;
-        }
-        .problem-item { 
-            font-size: 14px;
-            height: 28px;
-            line-height: 28px;
-        }
-        
-        /* 竖式计算区域 */
-        .vertical-section { 
-            margin-top: 15px;
-            border-top: 2px solid #333; 
-            padding-top: 8px; 
-            page-break-inside: avoid; 
-        }
-        .vertical-title { 
-            font-weight: bold; 
-            font-size: 15px; 
-            margin-bottom: 10px; 
-        }
-        .vertical-grid { 
-            display: flex; 
-            justify-content: space-around; 
-            gap: 40px;
-        }
-        .vertical-item { 
-            font-size: 17px; 
-            line-height: 1.6;
-            font-family: "Courier New", monospace;
-        }
-        .vertical-row { 
-            text-align: right; 
-            letter-spacing: 2px;
-        }
-        .vertical-line { 
-            border-top: 2px solid #000; 
-            margin-top: 2px;
+<style>
+    * {
+        box-sizing: border-box;
+    }
+    
+    body { 
+        font-family: "Microsoft YaHei", "SimHei", sans-serif; 
+        padding: 20px;
+        margin: 0 auto;
+        width: 210mm;
+        text-align: center;
+    }
+    
+    .controls { 
+        margin: 0 auto 20px auto;
+        padding: 15px; 
+        background: #f5f5f5; 
+        border-radius: 8px;
+        width: 100%;
+        text-align: left;
+    }
+    .controls input { padding: 8px; width: 100px; margin-right: 10px; }
+    .controls button { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .controls button:hover { background: #0056b3; }
+    
+    /* 题目区域样式 */
+    #problem-container { 
+        display: none;
+        width: 100%;
+        margin: 0 auto;
+        padding: 10px;
+        text-align: center;
+    }
+    .header-info { 
+        text-align: center; 
+        margin-bottom: 10px; 
+        font-size: 14px; 
+    }
+    
+    /* 一行四列 - 口算题区域 */
+    .problem-grid { 
+        display: grid; 
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px 5px;
+        width: 100%;
+        padding-left: 30px;
+    }
+    .problem-item { 
+        font-size: 17px;
+        height: 28px;
+        line-height: 28px;
+        text-align: left;
+        /* 新增：确保下划线字符显示正常，pre-wrap允许换行但保留空格/下划线 */
+        white-space: pre-wrap; 
+        /* 如果希望下划线更长，可以在JS里多加几个下划线，或者这里增加字间距 */
+        letter-spacing: 0.5px;
+    }
+    
+    /* 竖式计算区域 - 改为横式 */
+    .vertical-section { 
+        margin-top: 5px;
+        margin-bottom: 100px;
+        border-top: none;
+        padding-top: 20px; 
+        padding-bottom: 30px;
+        page-break-inside: avoid;
+    }
+    .vertical-title { 
+        font-weight: bold; 
+        font-size: 15px; 
+        margin-bottom: 5px;
+        text-align: left;
+    }
+    .vertical-grid { 
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px 40px;
+    }
+    .vertical-item { 
+        font-size: 17px; 
+        line-height: 2.8;
+        text-align: left;
+        padding-left: 20px;
+    }
+    
+    /* 除法竖式专用样式 */
+    .division-section {
+        margin-top: 100px;
+        margin-bottom: 50px;
+        border-top: none;
+        padding-top: 25px;
+        padding-bottom: 25px;
+        page-break-inside: avoid;
+    }
+    .division-title {
+        font-weight: bold;
+        font-size: 15px;
+        margin-bottom: 10px;
+        text-align: left;
+    }
+    .division-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 25px 40px;
+    }
+    .division-item {
+        font-size: 17px;
+        line-height: 3;
+        text-align: left;
+        padding-left: 20px;
+    }
+
+    /* 打印专用样式 */
+    @media print {
+        .controls { display: none; }
+        #problem-container { 
+            display: block !important;
+            margin: 0;
+            padding: 0;
             width: 100%;
         }
-        .vertical-answer {
-            height: 25px;
+        body { 
+            padding: 0; 
+            margin: 0;
+            width: 100%;
+            max-width: none;
         }
-
-        /* 【关键修复】打印专用样式 - 去除页眉页脚 */
-        @media print {
-            .controls { display: none; }
-            #problem-container { display: block; }
-            body { padding: 0; margin: 0; }
-            .problem-grid { 
-                gap: 6px 5px;
-            }
-            .problem-item {
-                height: 26px;
-                line-height: 26px;
-                font-size: 13px;
-            }
-            .header-info {
-                margin-bottom: 5px;
-                font-size: 12px;
-            }
-            .vertical-section {
-                margin-top: 10px;
-                padding-top: 5px;
-            }
-            
-            /* 【关键】设置页边距，去除页眉页脚 */
-            @page {
-                margin: 1cm;
-                size: A4;
-                /* 去除页眉页脚标记 */
-                margin-top: 1cm;
-                margin-bottom: 1cm;
-            }
-            
-            /* 隐藏浏览器默认页眉页脚 */
-            @page :first {
-                margin-top: 1cm;
-            }
-            
-            /* 防止内容被截断 */
-            * {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
+        .problem-grid { 
+            gap: 6px 5px;
+            padding-left: 20px;
         }
-    </style>
+        .problem-item {
+            height: 24px;
+            line-height: 24px;
+            font-size: 13px;
+        }
+        .header-info {
+            margin-bottom: 5px;
+            font-size: 14px;
+            padding-bottom: 20px;
+        }
+        
+        /* 竖式计算区域 - 打印优化 */
+        .vertical-section {
+            margin-top: 5mm;
+            margin-bottom: 8mm;
+            padding-top: 5mm;
+            padding-bottom: 20mm;
+            border-top: none;
+        }
+        .vertical-title {
+            font-size: 15px;
+            margin-bottom: 1mm;
+        }
+        .vertical-grid {
+            gap: 12mm 50px;
+        }
+        .vertical-item {
+            font-size: 16px;
+            line-height: 2.8;
+        }
+        
+        /* 除法竖式区域 - 打印优化 */
+        .division-section {
+            margin-top: 5mm;
+            margin-bottom: 5mm;
+            padding-top: 5mm;
+            padding-bottom: 12mm;
+            border-top: none;
+        }
+        .division-title {
+            font-size: 15px;
+            margin-bottom: 1mm;
+        }
+        .division-grid {
+            gap: 12mm 50px;
+        }
+        .division-item {
+            font-size: 16px;
+            line-height: 2.8;
+        }
+        
+        @page {
+            margin: 10mm;
+            size: A4;
+        }
+        
+        * {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+    }
+</style>
 </head>
 <body>
 
-<div class="controls">
+<div class="controls" style="margin: 0 auto; width: 210mm;">
     <h3>🛠️ 设置面板</h3>
     <label>口算题数：</label>
     <input type="number" id="numInput" value="60" min="1" max="100">
@@ -127,6 +219,11 @@
     <div class="vertical-section">
         <div class="vertical-title">竖式计算：</div>
         <div class="vertical-grid" id="verticalGrid"></div>
+    </div>
+
+    <div class="division-section">
+        <div class="division-title">除法竖式：</div>
+        <div class="division-grid" id="divisionGrid"></div>
     </div>
 </div>
 
@@ -153,6 +250,7 @@
     // 核心逻辑：生成题目
     function generateMathProblems(numProblems = 60) {
         const MAX_PROBLEMS = 80;
+        // 稍微放宽限制，因为布局更紧凑了，但依然保持安全上限
         if (numProblems > MAX_PROBLEMS) {
             numProblems = MAX_PROBLEMS;
             alert(`题目数量已自动调整为${MAX_PROBLEMS}道，以确保一页能放下`);
@@ -221,77 +319,104 @@
         let vs_num2 = randint(100, vs_num1);
         verticalProblems.push({ type: 'sub', num1: vs_num1, num2: vs_num2 });
 
-        return { problems, verticalProblems };
+        // 生成2道商是个位数且有余数的除法竖式
+        let divisionProblems = [];
+        for (let i = 0; i < 2; i++) {
+            let divisor = randint(2, 9); // 除数：1位数（2-9）
+            let quotient = randint(1, 9); // 商：个位数（1-9）
+            let remainder = randint(1, divisor - 1); // 余数：1到(除数-1)，确保有余数且余数<除数
+            let dividend = divisor * quotient + remainder; // 被除数 = 除数 × 商 + 余数
+
+            divisionProblems.push({
+                type: 'div',
+                dividend: dividend,
+                divisor: divisor
+            });
+        }
+
+        return { problems, verticalProblems, divisionProblems };
     }
 
-    // 生成单道题目
+        // 生成单道题目
     function createSingleProblem(operation) {
         if (operation === 'two_num_add') {
-            let a = randint(0, 99);
-            let b = randint(0, 100 - a);
+            let a = randint(2, 99);
+            let b = randint(2, 100 - a);
+            if (b < 2) return null;
             return `${a} + ${b} =`;
+        
         } else if (operation === 'two_num_add_fill') {
             let fillPosition = Math.random() > 0.5 ? 'first' : 'second';
-            let a = randint(0, 99);
-            let b = randint(0, 100 - a);
-            return fillPosition === 'first' ? `(    ) + ${b} = ${a + b}` : `${a} + (    ) = ${a + b}`;
+            let a = randint(2, 99);
+            let b = randint(2, 100 - a);
+            if (b < 2) return null;
+            return fillPosition === 'first' ? `______ + ${b} = ${a + b}` : `${a} + ______ = ${a + b}`;
+
         } else if (operation === 'two_num_sub') {
-            let a = randint(1, 100);
-            let b = randint(0, a);
+            let a = randint(3, 100);
+            let b = randint(2, a - 1);
+            if (b < 2) return null;
             return `${a} - ${b} =`;
+        
         } else if (operation === 'two_num_sub_fill') {
             let fillPosition = Math.random() > 0.5 ? 'first' : 'second';
-            let a = randint(1, 100);
-            let b = randint(0, a);
-            return fillPosition === 'first' ? `(    ) - ${b} = ${a - b}` : `${a} - (    ) = ${a - b}`;
+            let a = randint(3, 100);
+            let b = randint(2, a - 1);
+            if (b < 2) return null;
+            return fillPosition === 'first' ? `______ - ${b} = ${a - b}` : `${a} - ______ = ${a - b}`;
+
         } else if (operation === 'multiply') {
-            let m1 = randint(1, 9);
-            let m2 = randint(1, 9);
+            let m1 = randint(2, 9);
+            let m2 = randint(2, 9);
             return `${m1} × ${m2} =`;
+        
         } else if (operation === 'multiply_fill') {
             let fillPosition = Math.random() > 0.5 ? 'first' : 'second';
-            let m1 = randint(1, 9);
-            let m2 = randint(1, 9);
+            let m1 = randint(2, 9);
+            let m2 = randint(2, 9);
             let res = m1 * m2;
-            return fillPosition === 'first' ? `${m1} × (    ) = ${res}` : `(    ) × ${m2} = ${res}`;
+            return fillPosition === 'first' ? `${m1} × ______ = ${res}` : `______ × ${m2} = ${res}`;
+
         } else if (operation === 'divide') {
             if (multiplicationTableDivisions.length === 0) return null;
             let item = multiplicationTableDivisions[randint(0, multiplicationTableDivisions.length - 1)];
             return `${item.dividend} ÷ ${item.divisor} =`;
+        
         } else if (operation === 'divide_fill') {
             if (multiplicationTableDivisions.length === 0) return null;
             let item = multiplicationTableDivisions[randint(0, multiplicationTableDivisions.length - 1)];
             let pos = Math.random();
-            if (pos < 0.33) return `____ ÷ ${item.divisor} = ${item.quotient}`;
-            else if (pos < 0.66) return `${item.dividend} ÷ ____ = ${item.quotient}`;
-            else return `${item.dividend} ÷ ${item.divisor} = ____`;
-        } else if (operation === 'mixed_three') {
-            let pattern = Math.random() > 0.5 ? '+-' : '-+';
+            if (pos < 0.33) return `______ ÷ ${item.divisor} = ${item.quotient}`;
+            else if (pos < 0.66) return `${item.dividend} ÷ ______ = ${item.quotient}`;
+            else return `${item.dividend} ÷ ${item.divisor} = ______`;
+        } 
+        
+        else if (operation === 'mixed_three') {
+             let pattern = Math.random() > 0.5 ? '+-' : '-+';
             if (pattern === '+-') {
-                let a = randint(1, 70);
-                let b = randint(1, Math.min(30, 100 - a));
-                let c = randint(1, Math.min(30, a + b));
+                let a = randint(2, 70);
+                let b = randint(2, Math.min(30, 100 - a));
+                let c = randint(2, Math.min(30, a + b));
                 return `${a} + ${b} - ${c} =`;
             } else {
                 let a = randint(10, 70);
-                let b = randint(1, Math.min(30, a));
+                let b = randint(2, Math.min(30, a));
                 let cMax = Math.min(30, 100 - (a - b));
-                let c = cMax > 0 ? randint(1, cMax) : 0;
+                let c = cMax > 1 ? randint(2, cMax) : 0;
                 return c > 0 ? `${a} - ${b} + ${c} =` : `${a} - ${b} =`;
             }
         } else if (operation === 'comparison_expr') {
             let v1 = randint(10, 90);
             let v2 = randint(10, 90);
-            return `${v1} + ${randint(1,9)} ◯ ${v2} - ${randint(1,9)}`;
+            return `${v1} + ${randint(2,9)} ◯ ${v2} - ${randint(2,9)}`;
         } else if (operation === 'compare_num_expr') {
             let val = randint(10, 90);
             let num = val + randint(-3, 3);
-            return Math.random() > 0.5 ? `${num} ○ ${val} + 0` : `${val} + 0 ○ ${num}`;
+            return Math.random() > 0.5 ? `${num} ○ ${val} + ${randint(1,5)}` : `${val} + ${randint(1,5)} ○ ${num}`;
         }
         return null;
     }
-
-    // 渲染竖式题目
+    // 渲染加减法竖式题目
     function renderVerticalProblems(verticalProblems) {
         const vGrid = document.getElementById('verticalGrid');
         vGrid.innerHTML = '';
@@ -300,27 +425,40 @@
             let container = document.createElement('div');
             container.className = 'vertical-item';
             
-            let op = prob.type === 'add' ? '+' : '-';
-            let n1 = prob.num1.toString();
-            let n2 = prob.num2.toString();
+            if (prob.type === 'add') {
+                let op = '+';
+                let n1 = prob.num1;
+                let n2 = prob.num2;
+                container.innerHTML = `${n1} ${op} ${n2} = `;
+            } else if (prob.type === 'sub') {
+                let op = '-';
+                let n1 = prob.num1;
+                let n2 = prob.num2;
+                container.innerHTML = `${n1} ${op} ${n2} = `;
+            }
             
-            const FIXED_WIDTH = 5;
-            
-            let n1Padded = n1.padStart(FIXED_WIDTH, ' ');
-            let line2Padded = (op + ' ' + n2).padStart(FIXED_WIDTH, ' ');
-            
-            container.innerHTML = `
-                <div class="vertical-row">${n1Padded}</div>
-                <div class="vertical-row">${line2Padded}</div>
-                <div class="vertical-line"></div>
-                <div class="vertical-answer"></div>
-            `;
             vGrid.appendChild(container);
         });
     }
 
+    // 渲染除法竖式题目（不带答案）
+    function renderDivisionProblems(divisionProblems) {
+        const dGrid = document.getElementById('divisionGrid');
+        dGrid.innerHTML = '';
+        
+        divisionProblems.forEach(prob => {
+            let container = document.createElement('div');
+            container.className = 'division-item';
+            
+            // 除法格式：被除数 ÷ 除数 = （留空给学生填写）
+            container.innerHTML = `${prob.dividend} ÷ ${prob.divisor} = `;
+            
+            dGrid.appendChild(container);
+        });
+    }
+
     // 渲染题目到页面
-    function renderProblems(problems, verticalProblems) {
+    function renderProblems(problems, verticalProblems, divisionProblems = []) {
         const grid = document.getElementById('problemGrid');
         grid.innerHTML = '';
         problems.forEach(p => {
@@ -331,17 +469,26 @@
         });
 
         renderVerticalProblems(verticalProblems);
+        renderDivisionProblems(divisionProblems);
 
         document.getElementById('problem-container').style.display = 'block';
     }
 
     // 主流程：生成并触发打印
     function generateAndPrint() {
+        // 初始化除法数据
         initDivisionData();
-        const num = parseInt(document.getElementById('numInput').value) || 60;
-        const { problems, verticalProblems } = generateMathProblems(num);
-        renderProblems(problems, verticalProblems);
         
+        // 获取用户输入的题目数量
+        const num = parseInt(document.getElementById('numInput').value) || 60;
+        
+        // 生成所有类型的题目，包括口算、加减竖式和除法竖式
+        const { problems, verticalProblems, divisionProblems } = generateMathProblems(num);
+        
+        // 渲染题目到页面
+        renderProblems(problems, verticalProblems, divisionProblems);
+        
+        // 延迟触发打印，确保DOM完全渲染
         setTimeout(() => {
             window.print();
         }, 500);
