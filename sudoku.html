@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数独生成器</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: "Microsoft YaHei", "SimHei", sans-serif;
+            padding: 20px;
+            margin: 0 auto;
+            width: 210mm;
+            text-align: center;
+        }
+
+        .controls {
+            margin: 0 auto 20px auto;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            width: 100%;
+            text-align: left;
+        }
+        .controls select, .controls input {
+            padding: 6px 8px;
+            margin-right: 15px;
+            font-size: 14px;
+        }
+        .controls button {
+            padding: 8px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .controls button:hover { background: #0056b3; }
+        .controls .hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* 题目容器 */
+        #problem-container {
+            display: none;
+            width: 100%;
+            margin: 0 auto;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .header-info {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .sudoku-section {
+            margin-top: 10px;
+        }
+
+        .sudoku-title {
+            font-weight: bold;
+            font-size: 15px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        /* 数独网格 - 使用表格实现 */
+        .sudoku-grid {
+            border-collapse: collapse;
+            margin: 0 auto;
+            table-layout: fixed;
+        }
+
+        .sudoku-grid td {
+            border: 1px solid #bbb;
+            text-align: center;
+            vertical-align: middle;
+            font-weight: bold;
+            padding: 0;
+            box-sizing: content-box;
+        }
+
+        /* 宫界线：左边界 */
+        .sudoku-grid td.box-left {
+            border-left: 3px solid #333;
+        }
+        /* 宫界线：上边界 */
+        .sudoku-grid td.box-top {
+            border-top: 3px solid #333;
+        }
+
+        /* 给定数字样式 */
+        .sudoku-grid td.given {
+            color: #000;
+        }
+        /* 空格占位 */
+        .sudoku-grid td.blank {
+            background: #fff;
+        }
+
+        /* 打印样式 */
+        @media print {
+            .controls { display: none; }
+            #problem-container {
+                display: block !important;
+                margin: 0;
+                padding: 0;
+                width: 100%;
+            }
+            body {
+                padding: 0;
+                margin: 0;
+                width: 100%;
+                max-width: none;
+            }
+            .sudoku-grid {
+                width: 100%;
+                max-width: 100%;
+            }
+            .sudoku-grid td {
+                aspect-ratio: 1;
+                height: auto;
+                font-size: 18pt !important;
+            }
+            .header-info {
+                margin-bottom: 5px;
+                font-size: 14px;
+                padding-bottom: 10px;
+            }
+            @page {
+                margin: 15mm;
+                size: A4 portrait;
+            }
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <h3>数独设置</h3>
+    <label>数独尺寸：</label>
+    <select id="sizeSelect">
+        <option value="4">4×4</option>
+        <option value="6">6×6</option>
+        <option value="8">8×8</option>
+        <option value="9" selected>9×9</option>
+    </select>
+    <label>难度：</label>
+    <select id="difficultySelect">
+        <option value="easy">简单</option>
+        <option value="medium" selected>中等</option>
+        <option value="hard">困难</option>
+    </select>
+    <button onclick="generateAndPrint()">生成并下载 PDF</button>
+    <p class="hint">* 打印时请<b>取消勾选"页眉和页脚"</b>选项，以确保无页脚输出</p>
+</div>
+
+<div id="problem-container">
+    <div class="header-info">
+        姓名：________________ &nbsp;&nbsp;&nbsp; 日期：________________ &nbsp;&nbsp;&nbsp; 用时：________________
+    </div>
+    <div class="sudoku-section">
+        <div class="sudoku-title" id="sudokuTitle">9×9 数独</div>
+        <table class="sudoku-grid" id="sudokuGrid">
+            <!-- 由 JS 动态生成 -->
+        </table>
+    </div>
+</div>
+
+<script>
+    // ========== 工具函数 ==========
+    function randint(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    // ========== 宫格配置 ==========
+    function getBoxSize(size) {
+        switch (size) {
+            case 4: return [2, 2];
+            case 6: return [2, 3];
+            case 8: return [2, 4];
+            case 9: return [3, 3];
+            default: return [3, 3];
+        }
+    }
+
+    const BLANK_RANGES = {
+        4:  { easy: [4, 5],   medium: [6, 8],   hard: [9, 10] },
+        6:  { easy: [10, 13], medium: [16, 20], hard: [22, 26] },
+        8:  { easy: [18, 22], medium: [28, 34], hard: [38, 44] },
+        9:  { easy: [24, 30], medium: [36, 42], hard: [48, 54] },
+    };
+
+    // ========== 数独核心算法 ==========
+
+    /** 检查在 (row, col) 放置 num 是否合法 */
+    function isValid(grid, row, col, num, boxRows, boxCols) {
+        const size = grid.length;
+        for (let c = 0; c < size; c++) {
+            if (grid[row][c] === num) return false;
+        }
+        for (let r = 0; r < size; r++) {
+            if (grid[r][col] === num) return false;
+        }
+        const br = Math.floor(row / boxRows) * boxRows;
+        const bc = Math.floor(col / boxCols) * boxCols;
+        for (let r = br; r < br + boxRows; r++) {
+            for (let c = bc; c < bc + boxCols; c++) {
+                if (grid[r][c] === num) return false;
+            }
+        }
+        return true;
+    }
+
+    /** 回溯法求解数独，返回 true 表示有解 */
+    function solveSudoku(grid, boxRows, boxCols) {
+        const size = grid.length;
+        for (let row = 0; row < size; row++) {
+            for (let col = 0; col < size; col++) {
+                if (grid[row][col] === 0) {
+                    const candidates = shuffle(
+                        Array.from({ length: size }, (_, i) => i + 1)
+                    );
+                    for (const num of candidates) {
+                        if (isValid(grid, row, col, num, boxRows, boxCols)) {
+                            grid[row][col] = num;
+                            if (solveSudoku(grid, boxRows, boxCols)) {
+                                return true;
+                            }
+                            grid[row][col] = 0;
+                        }
+                    }
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /** 生成一个完整的数独解 */
+    function generateSolution(size) {
+        const [boxRows, boxCols] = getBoxSize(size);
+        const grid = Array.from({ length: size }, () => Array(size).fill(0));
+        solveSudoku(grid, boxRows, boxCols);
+        return grid;
+    }
+
+    /** 根据难度从完整解中挖空生成谜题（对称挖空） */
+    function createPuzzle(solution, size, difficulty) {
+        const puzzle = solution.map(row => [...row]);
+        const [minB, maxB] = BLANK_RANGES[size][difficulty];
+        const targetBlanks = randint(minB, maxB);
+
+        // 所有位置随机顺序
+        const positions = [];
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                positions.push([r, c]);
+            }
+        }
+        shuffle(positions);
+
+        const removed = new Set();
+        for (const [r, c] of positions) {
+            if (removed.size >= targetBlanks) break;
+            const key = `${r},${c}`;
+            if (removed.has(key)) continue;
+
+            // 挖当前格
+            puzzle[r][c] = 0;
+            removed.add(key);
+
+            // 中心对称挖另一格
+            const sr = size - 1 - r;
+            const sc = size - 1 - c;
+            const skey = `${sr},${sc}`;
+            if (!removed.has(skey) && removed.size < targetBlanks) {
+                puzzle[sr][sc] = 0;
+                removed.add(skey);
+            }
+        }
+
+        return puzzle;
+    }
+
+    // ========== 渲染 ==========
+
+    function renderSudoku(puzzle, size, difficulty) {
+        const [boxRows, boxCols] = getBoxSize(size);
+        const grid = document.getElementById('sudokuGrid');
+        grid.innerHTML = '';
+        grid.style.border = '3px solid #333'; // 外框
+
+        // 设置表宽
+        const maxScreenWidth = Math.min(window.innerWidth * 0.85, 500);
+        const cellSize = Math.floor(maxScreenWidth / size);
+        grid.style.width = (cellSize * size) + 'px';
+
+        // 更新标题
+        const diffLabels = { easy: '简单', medium: '中等', hard: '困难' };
+        document.getElementById('sudokuTitle').textContent =
+            `${size}×${size} 数独（${diffLabels[difficulty]}）`;
+
+        for (let r = 0; r < size; r++) {
+            const tr = document.createElement('tr');
+            for (let c = 0; c < size; c++) {
+                const td = document.createElement('td');
+                td.style.width = cellSize + 'px';
+                td.style.height = cellSize + 'px';
+                td.style.fontSize = Math.max(12, cellSize * 0.45) + 'px';
+
+                // 宫界线
+                if (c % boxCols === 0) td.classList.add('box-left');
+                if (r % boxRows === 0) td.classList.add('box-top');
+
+                if (puzzle[r][c] !== 0) {
+                    td.textContent = puzzle[r][c];
+                    td.classList.add('given');
+                } else {
+                    td.classList.add('blank');
+                }
+
+                tr.appendChild(td);
+            }
+            grid.appendChild(tr);
+        }
+    }
+
+    // ========== 主流程 ==========
+
+    function generateAndPrint() {
+        const size = parseInt(document.getElementById('sizeSelect').value);
+        const difficulty = document.getElementById('difficultySelect').value;
+
+        // 生成完整解
+        const solution = generateSolution(size);
+        // 挖空创建谜题
+        const puzzle = createPuzzle(solution, size, difficulty);
+
+        // 渲染
+        renderSudoku(puzzle, size, difficulty);
+
+        // 显示容器
+        document.getElementById('problem-container').style.display = 'block';
+
+        // 延迟打印
+        setTimeout(() => {
+            window.print();
+        }, 500);
+    }
+</script>
+
+</body>
+</html>
