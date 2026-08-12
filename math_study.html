@@ -87,6 +87,8 @@
         line-height: 2.8;
         text-align: left;
         padding-left: 20px;
+        padding-bottom: 90px;
+        min-height: 130px;
     }
     
     /* 除法竖式专用样式 */
@@ -116,6 +118,35 @@
         padding-left: 20px;
     }
 
+    /* 数独专用样式 */
+    .sudoku-section {
+        margin-top: 5px;
+    }
+    .sudoku-title {
+        font-weight: bold;
+        font-size: 15px;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    .sudoku-grid {
+        border-collapse: collapse;
+        margin: 0 auto;
+        table-layout: fixed;
+    }
+    .sudoku-grid td {
+        border: 1px solid #bbb;
+        text-align: center;
+        vertical-align: middle;
+        font-weight: bold;
+        padding: 0;
+        aspect-ratio: 1;
+    }
+    .sudoku-grid td.box-left { border-left: 3px solid #333; }
+    .sudoku-grid td.box-top { border-top: 3px solid #333; }
+    .sudoku-grid td.given { color: #000; }
+    .sudoku-grid td.blank { background: #fff; }
+    .sudoku-controls { margin-top: 10px; display: none; }
+
     /* 打印专用样式 */
     @media print {
         .controls { display: none; }
@@ -132,38 +163,41 @@
             max-width: none;
         }
         .problem-grid { 
-            gap: 6px 5px;
-            padding-left: 20px;
+            gap: 4px 4px;
+            padding-left: 15px;
+            margin-bottom: 3mm;
         }
         .problem-item {
-            height: 24px;
-            line-height: 24px;
-            font-size: 13px;
+            height: 26px;
+            line-height: 26px;
+            font-size: 14px;
         }
         .header-info {
-            margin-bottom: 5px;
-            font-size: 14px;
-            padding-bottom: 20px;
+            margin-bottom: 3mm;
+            font-size: 13px;
+            padding-bottom: 5px;
         }
         
         /* 竖式计算区域 - 打印优化 */
         .vertical-section {
-            margin-top: 5mm;
-            margin-bottom: 8mm;
-            padding-top: 5mm;
-            padding-bottom: 20mm;
+            margin-top: 1mm;
+            margin-bottom: 1mm;
+            padding-top: 2mm;
+            padding-bottom: 3mm;
             border-top: none;
         }
         .vertical-title {
-            font-size: 15px;
-            margin-bottom: 1mm;
+            font-size: 12px;
+            margin-bottom: 0.5mm;
         }
         .vertical-grid {
-            gap: 12mm 50px;
+            gap: 5mm 30px;
         }
         .vertical-item {
-            font-size: 16px;
-            line-height: 2.8;
+            font-size: 13px;
+            line-height: 2.0;
+            padding-bottom: 25px;
+            min-height: 80px;
         }
         
         /* 除法竖式区域 - 打印优化 */
@@ -185,9 +219,23 @@
             font-size: 16px;
             line-height: 2.8;
         }
+
+        /* 数独打印样式 */
+        .sudoku-section {
+            margin-top: 3mm;
+        }
+        .sudoku-title {
+            font-size: 11px;
+            margin-bottom: 0;
+        }
+        .sudoku-grid {
+        }
+        .sudoku-grid td {
+            font-size: 18pt !important;
+        }
         
         @page {
-            margin: 10mm;
+            margin: 5mm;
             size: A4;
         }
         
@@ -202,9 +250,28 @@
 
 <div class="controls" style="margin: 0 auto; width: 210mm;">
     <h3>🛠️ 设置面板</h3>
-    <label>口算题数：</label>
-    <input type="number" id="numInput" value="60" min="1" max="100">
-    <button onclick="generateAndPrint()">生成并下载 PDF</button>
+    <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:center;">
+      <div><label>口算题数：</label><input type="number" id="oralCount" value="32" min="1" max="999"></div>
+      <div><label>竖式题数：</label><input type="number" id="verticalCount" value="4" min="0" max="8"></div>
+      <label><input type="checkbox" id="sudokuToggle" onchange="toggleSudoku()" checked> 包含数独</label>
+      <span class="sudoku-controls" id="sudokuControls">
+        <label>尺寸：</label>
+        <select id="sizeSelect">
+          <option value="4">4×4</option>
+          <option value="6">6×6</option>
+          <option value="9" selected>9×9</option>
+        </select>
+        <label>难度：</label>
+        <select id="difficultySelect">
+          <option value="easy" selected>简单</option>
+          <option value="medium">中等</option>
+          <option value="hard">困难</option>
+        </select>
+        <label>偏移：</label>
+        <input type="number" id="sudokuOffset" value="0" min="-100" max="100" style="width:60px"> mm
+      </span>
+      <button onclick="generateAndPrint()">生成并下载 PDF</button>
+    </div>
     <p style="font-size: 12px; color: #666; margin-top: 5px;">
         * 打印时请<b>取消勾选"页眉和页脚"</b>选项，以确保无页脚输出
     </p>
@@ -217,14 +284,16 @@
     <div class="problem-grid" id="problemGrid"></div>
     
     <div class="vertical-section">
-        <div class="vertical-title">竖式计算：</div>
+        <div class="vertical-title">万以内加减法（竖式计算）：</div>
         <div class="vertical-grid" id="verticalGrid"></div>
     </div>
 
-    <div class="division-section">
-        <div class="division-title">除法竖式：</div>
-        <div class="division-grid" id="divisionGrid"></div>
+
+    <div class="sudoku-section" id="sudokuSection" style="display:none;">
+        <div class="sudoku-title" id="sudokuTitle">9×9 数独</div>
+        <table class="sudoku-grid" id="sudokuGrid"></table>
     </div>
+
 </div>
 
 <script>
@@ -248,12 +317,15 @@
     }
 
     // 核心逻辑：生成题目
-    function generateMathProblems(numProblems = 60) {
-        const MAX_PROBLEMS = 80;
-        // 稍微放宽限制，因为布局更紧凑了，但依然保持安全上限
-        if (numProblems > MAX_PROBLEMS) {
-            numProblems = MAX_PROBLEMS;
-            alert(`题目数量已自动调整为${MAX_PROBLEMS}道，以确保一页能放下`);
+    function generateMathProblems(oralCount = 60, verticalCount = 4) {
+        const MAX_ORAL = 999, MAX_VERTICAL = 8;
+        if (oralCount > MAX_ORAL) {
+            oralCount = MAX_ORAL;
+            alert(`口算题数已自动调整为${MAX_ORAL}道，以确保一页能放下`);
+        }
+        if (verticalCount > MAX_VERTICAL) {
+            verticalCount = MAX_VERTICAL;
+            alert(`竖式题数已自动调整为${MAX_VERTICAL}道，以确保一页能放下`);
         }
         
         let problems = [];
@@ -261,18 +333,14 @@
         
         const problemTypes = [
             { type: 'two_num_add', weight: 10 },
-            { type: 'two_num_add_fill', weight: 5 },
             { type: 'two_num_sub', weight: 10 },
-            { type: 'two_num_sub_fill', weight: 5 },
-            { type: 'multiply', weight: 20 },
-            { type: 'multiply_fill', weight: 13 },
-            { type: 'triple_add', weight: 0 },
-            { type: 'triple_sub', weight: 0 },
-            { type: 'mixed_three', weight: 2 },
-            { type: 'comparison_expr', weight: 1 },
-            { type: 'compare_num_expr', weight: 1 },
-            { type: 'divide', weight: 18 },
-            { type: 'divide_fill', weight: 15 }
+            { type: 'multiply', weight: 8 },
+            { type: 'divide', weight: 6 },
+            { type: 'remainder_divide', weight: 10 },
+            { type: 'fill_missing_large', weight: 8 },
+            { type: 'large_add_sub', weight: 8 },
+            { type: 'mixed_three', weight: 3 },
+            { type: 'comparison_expr', weight: 1 }
         ];
 
         let typeQueue = [];
@@ -285,7 +353,7 @@
         typeQueue.sort(() => Math.random() - 0.5);
 
         let queueIndex = 0;
-        while (problems.length < numProblems) {
+        while (problems.length < oralCount) {
             if (queueIndex >= typeQueue.length) {
                 typeQueue.sort(() => Math.random() - 0.5);
                 queueIndex = 0;
@@ -309,32 +377,22 @@
             }
         }
 
-        // 生成 2 道万以内竖式题目
+        // 生成竖式题目
         let verticalProblems = [];
-        let va_num1 = randint(1000, 8999);
-        let va_num2 = randint(100, 9999 - va_num1);
-        verticalProblems.push({ type: 'add', num1: va_num1, num2: va_num2 });
-
-        let vs_num1 = randint(2000, 9999);
-        let vs_num2 = randint(100, vs_num1);
-        verticalProblems.push({ type: 'sub', num1: vs_num1, num2: vs_num2 });
-
-        // 生成2道商是个位数且有余数的除法竖式
-        let divisionProblems = [];
-        for (let i = 0; i < 2; i++) {
-            let divisor = randint(2, 9); // 除数：1位数（2-9）
-            let quotient = randint(1, 9); // 商：个位数（1-9）
-            let remainder = randint(1, divisor - 1); // 余数：1到(除数-1)，确保有余数且余数<除数
-            let dividend = divisor * quotient + remainder; // 被除数 = 除数 × 商 + 余数
-
-            divisionProblems.push({
-                type: 'div',
-                dividend: dividend,
-                divisor: divisor
-            });
+        for (let i = 0; i < verticalCount; i++) {
+            let isAdd = Math.random() > 0.5;
+            if (isAdd) {
+                let n1 = randint(1000, 8999);
+                let n2 = randint(100, 9999 - n1);
+                verticalProblems.push({ type: 'add', num1: n1, num2: n2 });
+            } else {
+                let n1 = randint(2000, 9999);
+                let n2 = randint(100, n1);
+                verticalProblems.push({ type: 'sub', num1: n1, num2: n2 });
+            }
         }
 
-        return { problems, verticalProblems, divisionProblems };
+        return { problems, verticalProblems };
     }
 
         // 生成单道题目
@@ -389,7 +447,68 @@
             if (pos < 0.33) return `______ ÷ ${item.divisor} = ${item.quotient}`;
             else if (pos < 0.66) return `${item.dividend} ÷ ______ = ${item.quotient}`;
             else return `${item.dividend} ÷ ${item.divisor} = ______`;
-        } 
+        
+        } else if (operation === 'remainder_divide') {
+            let divisor = randint(2, 9);
+            let quotient = randint(2, 9);
+            let remainder = randint(1, divisor - 1);
+            let dividend = divisor * quotient + remainder;
+            return `${dividend} ÷ ${divisor} = ______`;
+        
+        } else if (operation === 'large_add_sub') {
+            let isAdd = Math.random() > 0.5;
+            let useRound = Math.random() > 0.4;
+            if (isAdd) {
+                if (useRound) {
+                    let n1 = (randint(0, 8) + 1) * 1000;
+                    let n2 = randint(1, 9) * 100;
+                    if (Math.random() > 0.5) n2 = randint(1, 9) * 1000;
+                    return `${n1} + ${n2} =`;
+                } else {
+                    let n1 = randint(100, 900);
+                    let n2 = randint(100, 900);
+                    return `${n1} + ${n2} =`;
+                }
+            } else {
+                if (useRound) {
+                    let n1 = (randint(0, 8) + 1) * 1000;
+                    let n2 = randint(1, 9) * 100;
+                    if (n2 > n1) n2 = randint(1, Math.floor(n1 / 100) - 1) * 100;
+                    if (n2 < 100) n2 = 100;
+                    return `${n1} - ${n2} =`;
+                } else {
+                    let n1 = randint(300, 999);
+                    if (Math.random() > 0.5) n1 = randint(1000, 9000);
+                    let n2 = randint(100, n1);
+                    return `${n1} - ${n2} =`;
+                }
+            }
+
+        } else if (operation === 'fill_missing_large') {
+            let useAdd = Math.random() > 0.5;
+            let fillPos = randint(0, 2);
+            if (useAdd) {
+                let a = randint(1, 9) * 1000;
+                if (Math.random() > 0.5) a = randint(1, 9) * 100;
+                let b = randint(1, 9) * 100;
+                if (Math.random() > 0.5) b = randint(1, 9) * 1000;
+                let res = a + b;
+                if (res > 9999) { a = Math.floor(a / 2); b = Math.floor(b / 2); res = a + b; }
+                if (fillPos === 0) return `______ + ${b} = ${res}`;
+                else if (fillPos === 1) return `${a} + ______ = ${res}`;
+                else return `${a} + ${b} = ______`;
+            } else {
+                let a = randint(2, 9) * 1000;
+                if (Math.random() > 0.5) a = randint(2, 9) * 100;
+                let b = randint(1, 9) * 100;
+                if (b >= a) b = randint(1, Math.round(a / 100) - 1) * 100;
+                if (b < 100) b = 100;
+                let res = a - b;
+                if (fillPos === 0) return `______ - ${b} = ${res}`;
+                else if (fillPos === 1) return `${a} - ______ = ${res}`;
+                else return `${a} - ${b} = ______`;
+            }
+        }
         
         else if (operation === 'mixed_three') {
              let pattern = Math.random() > 0.5 ? '+-' : '-+';
@@ -416,7 +535,7 @@
         }
         return null;
     }
-    // 渲染加减法竖式题目
+    // 渲染加减法竖式题目（留空写竖式）
     function renderVerticalProblems(verticalProblems) {
         const vGrid = document.getElementById('verticalGrid');
         vGrid.innerHTML = '';
@@ -429,36 +548,20 @@
                 let op = '+';
                 let n1 = prob.num1;
                 let n2 = prob.num2;
-                container.innerHTML = `${n1} ${op} ${n2} = `;
+                container.innerHTML = `${n1} ${op} ${n2} = ________`;
             } else if (prob.type === 'sub') {
                 let op = '-';
                 let n1 = prob.num1;
                 let n2 = prob.num2;
-                container.innerHTML = `${n1} ${op} ${n2} = `;
+                container.innerHTML = `${n1} ${op} ${n2} = ________`;
             }
             
             vGrid.appendChild(container);
         });
     }
 
-    // 渲染除法竖式题目（不带答案）
-    function renderDivisionProblems(divisionProblems) {
-        const dGrid = document.getElementById('divisionGrid');
-        dGrid.innerHTML = '';
-        
-        divisionProblems.forEach(prob => {
-            let container = document.createElement('div');
-            container.className = 'division-item';
-            
-            // 除法格式：被除数 ÷ 除数 = （留空给学生填写）
-            container.innerHTML = `${prob.dividend} ÷ ${prob.divisor} = `;
-            
-            dGrid.appendChild(container);
-        });
-    }
-
     // 渲染题目到页面
-    function renderProblems(problems, verticalProblems, divisionProblems = []) {
+    function renderProblems(problems, verticalProblems) {
         const grid = document.getElementById('problemGrid');
         grid.innerHTML = '';
         problems.forEach(p => {
@@ -469,7 +572,6 @@
         });
 
         renderVerticalProblems(verticalProblems);
-        renderDivisionProblems(divisionProblems);
 
         document.getElementById('problem-container').style.display = 'block';
     }
@@ -480,13 +582,32 @@
         initDivisionData();
         
         // 获取用户输入的题目数量
-        const num = parseInt(document.getElementById('numInput').value) || 60;
+        let oralCount = parseInt(document.getElementById('oralCount').value) || 32;
+        let verticalCount = parseInt(document.getElementById('verticalCount').value) || 4;
+        if (verticalCount > 8) { verticalCount = 8; alert('竖式题数上限为8道'); }
         
-        // 生成所有类型的题目，包括口算、加减竖式和除法竖式
-        const { problems, verticalProblems, divisionProblems } = generateMathProblems(num);
+        const genSudoku = document.getElementById('sudokuToggle').checked;
+        
+        // 生成所有类型的题目，包括口算和竖式
+        const { problems, verticalProblems } = generateMathProblems(oralCount, verticalCount);
         
         // 渲染题目到页面
-        renderProblems(problems, verticalProblems, divisionProblems);
+        renderProblems(problems, verticalProblems);
+        
+        // 处理数独
+        const sudokuSection = document.getElementById('sudokuSection');
+        if (genSudoku) {
+            const size = parseInt(document.getElementById('sizeSelect').value);
+            const difficulty = document.getElementById('difficultySelect').value;
+            const offset = parseInt(document.getElementById('sudokuOffset').value) || 0;
+            const solution = generateSudokuSolution(size);
+            const puzzle = createSudokuPuzzle(solution, size, difficulty);
+            renderSudoku(puzzle, size, difficulty);
+            sudokuSection.style.display = '';
+            sudokuSection.style.marginTop = (offset + 3) + 'mm';
+        } else {
+            sudokuSection.style.display = 'none';
+        }
         
         // 延迟触发打印，确保DOM完全渲染
         setTimeout(() => {
@@ -494,8 +615,172 @@
         }, 500);
     }
 
+    /** 估算打印高度，返回一页能容纳的最大口算题数 */
+    function calcMaxOral(verticalCount, hasSudoku) {
+        const PAGE_MM = 287; // A4 - 2*5mm margins
+        const SAFETY_MM = hasSudoku ? 25 : 5;
+        
+        let used = 8; // header
+        
+        // 竖式计算区
+        if (verticalCount > 0) {
+            const vRows = Math.ceil(verticalCount / 2);
+            used += 8;  // section margin/padding: 1+2+3+2
+            used += 3;  // title
+            used += vRows * 21; // item height (80px ≈ 21mm)
+            used += (vRows - 1) * 5; // row gap
+        }
+        
+        // 数独区
+        if (hasSudoku) {
+            used += 3;  // title
+            used += 159; // grid (600px ≈ 159mm)
+        }
+        
+        const oralPerRow = 6.4; // 20px + 4px gap
+        const available = PAGE_MM - used - SAFETY_MM;
+        const maxRows = Math.floor(available / oralPerRow);
+        return Math.max(0, maxRows * 4);
+    }
+
+    // ========== 数独相关函数 ==========
+
+    function toggleSudoku() {
+        document.getElementById('sudokuControls').style.display =
+            document.getElementById('sudokuToggle').checked ? 'inline' : 'none';
+    }
+
+    function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function getBoxSize(size) {
+        switch (size) {
+            case 4: return [2, 2];
+            case 6: return [2, 3];
+            case 8: return [2, 4];
+            case 9: return [3, 3];
+            default: return [3, 3];
+        }
+    }
+
+    const BLANK_RANGES = {
+        4:  { easy: [4, 5],   medium: [6, 8],   hard: [9, 10] },
+        6:  { easy: [10, 13], medium: [16, 20], hard: [22, 26] },
+        8:  { easy: [18, 22], medium: [28, 34], hard: [38, 44] },
+        9:  { easy: [24, 30], medium: [36, 42], hard: [48, 54] },
+    };
+
+    function isValid(grid, row, col, num, boxRows, boxCols) {
+        const size = grid.length;
+        for (let c = 0; c < size; c++) { if (grid[row][c] === num) return false; }
+        for (let r = 0; r < size; r++) { if (grid[r][col] === num) return false; }
+        const br = Math.floor(row / boxRows) * boxRows;
+        const bc = Math.floor(col / boxCols) * boxCols;
+        for (let r = br; r < br + boxRows; r++) {
+            for (let c = bc; c < bc + boxCols; c++) {
+                if (grid[r][c] === num) return false;
+            }
+        }
+        return true;
+    }
+
+    function solveSudoku(grid, boxRows, boxCols) {
+        const size = grid.length;
+        for (let row = 0; row < size; row++) {
+            for (let col = 0; col < size; col++) {
+                if (grid[row][col] === 0) {
+                    const candidates = shuffle(Array.from({ length: size }, (_, i) => i + 1));
+                    for (const num of candidates) {
+                        if (isValid(grid, row, col, num, boxRows, boxCols)) {
+                            grid[row][col] = num;
+                            if (solveSudoku(grid, boxRows, boxCols)) return true;
+                            grid[row][col] = 0;
+                        }
+                    }
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    function generateSudokuSolution(size) {
+        const [boxRows, boxCols] = getBoxSize(size);
+        const grid = Array.from({ length: size }, () => Array(size).fill(0));
+        solveSudoku(grid, boxRows, boxCols);
+        return grid;
+    }
+
+    function createSudokuPuzzle(solution, size, difficulty) {
+        const puzzle = solution.map(row => [...row]);
+        const [minB, maxB] = BLANK_RANGES[size][difficulty];
+        const targetBlanks = randint(minB, maxB);
+        const positions = [];
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) { positions.push([r, c]); }
+        }
+        shuffle(positions);
+        const removed = new Set();
+        for (const [r, c] of positions) {
+            if (removed.size >= targetBlanks) break;
+            const key = `${r},${c}`;
+            if (removed.has(key)) continue;
+            puzzle[r][c] = 0;
+            removed.add(key);
+            const sr = size - 1 - r;
+            const sc = size - 1 - c;
+            const skey = `${sr},${sc}`;
+            if (!removed.has(skey) && removed.size < targetBlanks) {
+                puzzle[sr][sc] = 0;
+                removed.add(skey);
+            }
+        }
+        return puzzle;
+    }
+
+    function renderSudoku(puzzle, size, difficulty) {
+        const [boxRows, boxCols] = getBoxSize(size);
+        const grid = document.getElementById('sudokuGrid');
+        grid.innerHTML = '';
+        grid.style.border = '3px solid #333';
+
+        const maxScreenWidth = Math.min(window.innerWidth * 0.85, 600);
+        const cellSize = Math.floor(maxScreenWidth / size);
+        grid.style.width = (cellSize * size) + 'px';
+
+        const diffLabels = { easy: '简单', medium: '中等', hard: '困难' };
+        document.getElementById('sudokuTitle').textContent =
+            `${size}×${size} 数独（${diffLabels[difficulty]}）`;
+
+        for (let r = 0; r < size; r++) {
+                const tr = document.createElement('tr');
+                tr.style.height = cellSize + 'px';
+                for (let c = 0; c < size; c++) {
+                const td = document.createElement('td');
+                td.style.width = cellSize + 'px';
+                td.style.fontSize = Math.max(12, cellSize * 0.45) + 'px';
+                if (c % boxCols === 0) td.classList.add('box-left');
+                if (r % boxRows === 0) td.classList.add('box-top');
+                if (puzzle[r][c] !== 0) {
+                    td.textContent = puzzle[r][c];
+                    td.classList.add('given');
+                } else {
+                    td.classList.add('blank');
+                }
+                tr.appendChild(td);
+            }
+            grid.appendChild(tr);
+        }
+    }
+
     // 初始化
     initDivisionData();
+    toggleSudoku();
 </script>
 
 </body>
